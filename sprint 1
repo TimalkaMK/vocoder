@@ -1,0 +1,24 @@
+added play , pause , stop button and seekbar on ui - haven't hooked up the functionality
+
+*record button, tap longer to stop record come up with dialog to save the recording 
+distinguish when recording and when stopped with colours.*
+
+implementing record button clicked method 
+
+https://www.youtube.com/watch?v=XANjoeEeQ1Y
+
+trying to understand the format of a wav file
+
+http://www.topherlee.com/software/pcm-tut-wavformat.html
+
+record button is able to record voice to a temporary file.
+
+Understanding :- 
+
+((totalDataLen >> 8) & 0xff);
+
+https://en.wikipedia.org/wiki/Bitwise_operation
+https://docs.oracle.com/javase/tutorial/java/nutsandbolts/opsummary.html
+http://www.mkyong.com/java/java-and-0xff-example/
+
+save but should be able to save the recording to a .wav file.
