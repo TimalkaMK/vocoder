@@ -2,5 +2,11 @@
 <resources>
     <color name="colorPrimary">#3F51B5</color>
     <color name="colorPrimaryDark">#303F9F</color>
-    <color name="colorAccent">#FF4081</color>
+    <color name="colorAccent">#7A0711</color>
+    <color name="red">#A40710</color>
+    <color name="burgundy">#7A0711</color>
+    <color name="grey">#332d2d</color>
+    <color name="almostblack">#0C0C0C</color>
+    <color name="lightgrey">#FFA59191</color>
+    <color name="originalpink">#FF4081</color>
 </resources>

@@ -21,4 +21,19 @@ https://en.wikipedia.org/wiki/Bitwise_operation
 https://docs.oracle.com/javase/tutorial/java/nutsandbolts/opsummary.html
 http://www.mkyong.com/java/java-and-0xff-example/
 
-save but should be able to save the recording to a .wav file.
+save but should be able to save the recording to a .wav file. - working 
+
+Trying to playback file 
+
+
+http://stackoverflow.com/questions/27120720/android-open-failed-enoent-no-such-file-or-directory
+http://stackoverflow.com/questions/18931025/playing-a-song-in-directory-music
+http://developer.android.com/guide/topics/data/data-storage.html#filesInternal
+tackoverflow.com/questions/21790824/mediaplayer-should-have-subtitle-controller-already-set-kitkat
+http://stackoverflow.com/questions/31634016/logcat-error-e-mediaplayer-should-have-subtitle-controller-already-set
+
+http://stackoverflow.com/questions/7372813/android-audiotrack-playing-wav-file-getting-only-white-noise
+
+05-16 17:55:47.497 31660-31660/com.example.timalka.vocoder E/MediaPlayer-JNI: QCMediaPlayer mediaplayer NOT present
+05-16 17:55:47.511 31660-31660/com.example.timalka.vocoder E/MediaPlayer: Should have subtitle controller already set
+

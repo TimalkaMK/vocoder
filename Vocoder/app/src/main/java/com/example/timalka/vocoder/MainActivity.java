@@ -1,9 +1,15 @@
 package com.example.timalka.vocoder;
 
+import android.content.Context;
+import android.media.AudioAttributes;
 import android.media.AudioFormat;
+import android.media.AudioManager;
 import android.media.AudioRecord;
+import android.media.AudioTrack;
 import android.media.MediaPlayer;
 import android.media.MediaRecorder;
+import android.media.SoundPool;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.support.design.widget.FloatingActionButton;
@@ -13,9 +19,12 @@ import android.support.v7.widget.Toolbar;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.SeekBar;
 import android.widget.Toast;
 
+import java.io.DataInputStream;
 import java.io.File;
+import java.io.FileDescriptor;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -23,22 +32,37 @@ import java.io.IOException;
 
 public class MainActivity extends AppCompatActivity {
 
-    private AudioRecord audioRecorder;
+    // https://developer.android.com/guide/topics/media/audio-capture.html
+    // https://www.youtube.com/watch?v=jcrh8C376-c
+    // http://stackoverflow.com/questions/15090562/android-button-doesnt-look-pressed
+
+    private MediaRecorder mediaRecorder;
+    private MediaPlayer mediaPlayer;
+    private SoundPool soundPool;
+    private AudioAttributes attributes;
+    int track = 0;
+    private SeekBar pitch;
+
+    //audiotrack and audiorecord
     private int audioSource = MediaRecorder.AudioSource.MIC;
-    private int sampleRateInHz = 44100;
+    private int sampleRateInHz = 11025;
     private int channelConfig = AudioFormat.CHANNEL_IN_MONO;
     private int audioFormat = AudioFormat.ENCODING_PCM_16BIT;
-    private int bufferSizeInBytes = AudioRecord.getMinBufferSize(44100,AudioFormat.CHANNEL_IN_MONO,AudioFormat.ENCODING_PCM_16BIT);
+    private int bufferSizeInBytes = AudioRecord.getMinBufferSize(11025,AudioFormat.CHANNEL_IN_MONO,AudioFormat.ENCODING_PCM_16BIT);
+    private int bufferSizeinBytesforPlayback = android.media.AudioTrack.getMinBufferSize(11025, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT);
 
-    private static final String tempfilename = "temp.raw";
+    private static final String path = Environment.getExternalStorageDirectory().getAbsolutePath() + "/vocoder.3gpp";
+    private static final String wav = Environment.getExternalStorageDirectory().getAbsolutePath() + "/vocoder_pitch.wav";
+    private static final String temp = Environment.getExternalStorageDirectory().getAbsolutePath() + "/temp.raw";
 
+    private static int pitchLevel =10;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-
+        PitchSeekBar();
     }
 
     @Override
@@ -64,17 +88,155 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    private void recordButtonClicked(View view){
+    public void recordButtonClicked(View view) throws IOException {
 
-        audioRecorder = new AudioRecord(audioSource,sampleRateInHz, channelConfig,audioFormat,bufferSizeInBytes);
-        audioRecorder.startRecording();
-        readDatatoTemporaryFile();
+        if(mediaRecorder != null){
+            mediaRecorder.release();
+        }
 
+        File outputfile = new File(path);
+        if(outputfile != null){
+            outputfile.delete();
+        }
+
+        mediaRecorder = new MediaRecorder();
+        mediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+        mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
+        mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
+        mediaRecorder.setOutputFile(path);
+        mediaRecorder.prepare();
+        mediaRecorder.start();
+
+        Toast.makeText(this, "Recording...", Toast.LENGTH_SHORT).show();
+
+    }
+
+    public void stopRecordButtonClicked(View view){
+
+        mediaRecorder.stop();
+        mediaRecorder.release();
+        mediaRecorder = null;
+
+        Toast.makeText(this, "Recording stopped", Toast.LENGTH_SHORT).show();
+    }
+
+    public void PlayButtonClicked(View view) throws IOException {
+
+        if(mediaPlayer != null){
+
+            mediaPlayer.stop();
+            mediaPlayer.release();
+        }
+
+        mediaPlayer = new MediaPlayer();
+        mediaPlayer.setDataSource(path);
+        mediaPlayer.prepare();
+        mediaPlayer.start();
+
+        Toast.makeText(this,"Playing",Toast.LENGTH_SHORT).show();
+    }
+
+    public void StopPlayingButtonClicked(View view){
+
+        mediaPlayer.release();
+        mediaPlayer = null;
+
+        Toast.makeText(this,"Track has stopped playing",Toast.LENGTH_SHORT).show();
+    }
+
+    //http://stackoverflow.com/questions/7939411/android-audio-change-pitch
+    //http://stackoverflow.com/questions/17069955/play-sound-using-soundpool-example
+    //http://stackoverflow.com/questions/16731183/sample-not-ready-soundpool
+   // http://stackoverflow.com/questions/25306289/onprogresschanged-of-a-seekbar-is-called-twice
+
+    public void PitchHighButtonClicked(View view) {
+
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+            attributes = new AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_GAME)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .build();
+
+            soundPool = new SoundPool.Builder()
+                    .setAudioAttributes(attributes)
+                    .build();
+
+            track = soundPool.load(path,0);
+
+            //when track is loaded
+
+            soundPool.setOnLoadCompleteListener(new SoundPool.OnLoadCompleteListener() {
+                @Override
+                public void onLoadComplete(SoundPool soundPool, int sampleId,
+                                           int status) {
+                    soundPool.play(track, 1, 1, 0, 0, (float) (pitchLevel / 10f));
+                }
+            });
+        }
+    }
+
+    public void PitchSeekBar() {
+
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+            attributes = new AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_GAME)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .build();
+
+            soundPool = new SoundPool.Builder()
+                    .setAudioAttributes(attributes)
+                    .build();
+
+            track = soundPool.load(path,0);
+
+
+            //when track is loaded
+
+            soundPool.setOnLoadCompleteListener(new SoundPool.OnLoadCompleteListener() {
+                @Override
+                public void onLoadComplete(final SoundPool soundPool, int sampleId,
+                                           int status) {
+                    pitch = (SeekBar) findViewById(R.id.pitch);
+                    pitch.setMax(20);
+                    pitch.setProgress(10);
+                    pitch.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+                        @Override
+                        public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                            pitchLevel = progress;
+                        }
+
+                        @Override
+                        public void onStartTrackingTouch(SeekBar seekBar) {
+
+                        }
+
+                        @Override
+                        public void onStopTrackingTouch(SeekBar seekBar) {
+
+                        }
+                    });
+                }
+            });
+        }
+    }
+
+
+    /*  public void saveRecordingButtonClicked(View view){
+        // save recording to wav.file
+        converttoWav(theTemporaryFile(), theSavedFile());
+        // delete temporary file
+        File file = new File(theTemporaryFile());
+        file.delete();
+
+        // show toast when recording is saved
+        String saved = "The recording has been saved";
+        Toast.makeText(this,saved,Toast.LENGTH_SHORT).show();
     }
 
     private String theTemporaryFile(){
 
         String filepath = Environment.getExternalStorageDirectory().getPath();
+
         //main folder
         File file = new File(filepath,"Recordings");
 
@@ -99,18 +261,18 @@ public class MainActivity extends AppCompatActivity {
 
         String filepath = Environment.getExternalStorageDirectory().getPath();
         //main folder
-        File file = new File(filepath,"Recordings");
+       File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC),"/Vocoder");
 
         if (!file.exists()){
 
             file.mkdirs();
         }
 
-        return (file.getAbsolutePath() + "/" + System.currentTimeMillis() + ".wav");
+        return (file.getAbsolutePath() + "/jasus.wav");
 
-    }
+    }*/
 
-    private void readDatatoTemporaryFile(){
+   /* private void readDatatoTemporaryFile(){
 
         byte recording[] = new  byte[bufferSizeInBytes];
         String fileName = theTemporaryFile();
@@ -133,35 +295,16 @@ public class MainActivity extends AppCompatActivity {
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }
-
-    private void stopRecordButtonClicked(View view){
-
-        audioRecorder.stop();
-        audioRecorder.release();
-    }
+    }*/
 
 
-    private void saveRecordingButtonClicked (View view){
-        // save recording to wav.file
-        converttoWav(theTemporaryFile(),theSavedFile());
-
-        // delete temporary file
-        File file = new File(theTemporaryFile());
-        file.delete();
-
-        // show toast when recording is saved
-        String saved = "The recording has been saved";
-        Toast.makeText(this,saved,Toast.LENGTH_SHORT).show();
-    }
-
-    private void converttoWav(String fileIn, String fileOut){
+   private void converttoWav(String fileIn, String fileOut){
 
         long totalAudioLen = 0; // use with file in
         long totalDataLen = totalAudioLen + 36;
-        long sampleRate = 44100;
+        long sampleRate = 11025;
         int channels = 1;
-        long byteRate = 44100 * 16 * 1/8;
+        long byteRate = 11025 * 16 * 1/8;
 
         byte[] therecording = new byte[bufferSizeInBytes];
 
